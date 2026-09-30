@@ -12,10 +12,11 @@ Dashboard monitoring jaringan: **Internet Speed Test**, **Device Monitor**, **Wi
 
 ## Tech Stack
 
-- **Framework:** Next.js (App Router) + TypeScript
-- **Database:** Turso (libsql)
+- **Framework:** Next.js 16 (App Router) + React 19 + TypeScript
+- **Database:** Turso (libsql) — fallback otomatis ke SQLite lokal (`data/local.db`)
 - **Chart:** Recharts
-- **Platform:** Web app (dashboard browser)
+- **Discovery perangkat:** bonjour-service (mDNS)
+- **UI:** dark theme responsif (mobile & desktop)
 
 ## Menjalankan
 
@@ -53,7 +54,7 @@ project-fix-5/
 │       └── auth/                           # login / callback / logout / session
 │
 ├── components/
-│   ├── ui/                         # UserNav, dsb.
+│   ├── ui/                         # UserNav, NavLinks, dsb.
 │   ├── speed-test/SpeedHistoryChart.tsx
 │   ├── devices/
 │   ├── wifi-quality/LatencyChart.tsx
@@ -76,6 +77,9 @@ project-fix-5/
 │   ├── monitor-loop.ts             # Scheduler lokal (self-hosted)
 │   └── utils.ts
 │
+├── scripts/
+│   ├── start-network-monitor.ps1   # Launcher produksi (Task Scheduler)
+│   └── start-network-monitor.vbs   # Auto-start tersembunyi saat login
 ├── proxy.ts                        # Proteksi route (auth)
 ├── instrumentation.ts              # Start monitor-loop saat server start
 ├── next.config.mjs
@@ -171,9 +175,11 @@ Alur login:
 1. Buat OAuth App di https://github.com/settings/developers → dapatkan `GITHUB_CLIENT_ID` & `GITHUB_CLIENT_SECRET`.
 2. Set **Authorization callback URL** ke `http://localhost:3000/api/auth/callback` (lokal) dan `https://<domain>.vercel.app/api/auth/callback` (Vercel).
 3. Isi `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, dan `AUTH_SECRET` di `.env` (lokal) + Environment Variables di Vercel.
-4. Klik "Login dengan GitHub" di `/login` → callback membuat cookie `auth_session` (HTTP-only, HMAC-signed) → redirect ke dashboard.
+4. Klik "Login dengan GitHub" di `/login` → callback membuat cookie `auth_session` (HTTP-only, HMAC-signed) → redirect kembali ke halaman yang semula diminta (`next`), atau ke dashboard bila tidak ada.
 
 Endpoint auth: `GET /api/auth/login` (redirect ke GitHub), `GET /api/auth/callback`, `GET /api/auth/logout`, `GET /api/auth/session`.
+
+> Saat pengguna belum login mengunjungi halaman terproteksi, `proxy.ts` menyimpan path asal di cookie `auth_next` (httpOnly, 10 menit). Callback lalu memakainya untuk mengembalikan pengguna ke halaman tersebut — dengan validasi anti open-redirect (path harus diawali `/` dan bukan `//`).
 
 ## Identifikasi Vendor (OUI Lookup)
 
