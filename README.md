@@ -78,7 +78,6 @@ project-fix-5/
 │
 ├── proxy.ts                        # Proteksi route (auth)
 ├── instrumentation.ts              # Start monitor-loop saat server start
-├── vercel.json                     # Vercel Cron
 ├── next.config.mjs
 ├── .env.example
 └── .gitignore
@@ -154,10 +153,9 @@ Salin `.env.example` ke `.env` lalu isi kredensial Turso:
 
 ## Monitoring Otomatis
 
-Monitoring berjalan dalam dua mode, keduanya memakai logika yang sama di `lib/monitor.ts` (`runMonitorTick`):
+Monitoring otomatis memakai logika di `lib/monitor.ts` (`runMonitorTick`) dan berjalan **self-hosted** — `instrumentation.ts` memanggil `startMonitorLoop()` saat server start, lalu tick berjalan tiap `MONITOR_INTERVAL_MS` (default 1 menit). Aktif otomatis di `next dev` dan `next start`; nonaktifkan dengan `MONITOR_ENABLED=false`.
 
-1. **Lokal / self-hosted** — `instrumentation.ts` memanggil `startMonitorLoop()` saat server start, lalu tick berjalan tiap `MONITOR_INTERVAL_MS` (default 1 menit). Aktif otomatis di `next dev` dan `next start`; nonaktifkan dengan `MONITOR_ENABLED=false`.
-2. **Vercel** — Vercel Cron (lihat `vercel.json`) memanggil `GET /api/monitor` setiap menit. Endpoint ini menolak request tanpa header `Authorization: Bearer <CRON_SECRET>` jika `CRON_SECRET` diisi.
+> Monitoring berbasis ping **tidak berfungsi di Vercel** karena runtime serverless memblokir ICMP. Endpoint `GET /api/monitor` tetap tersedia (dilindungi `CRON_SECRET`), tapi hanya berguna saat app dijalankan di mesin lokal.
 
 Setiap tick: ping host → simpan sampel ke `latency_samples` → deteksi transisi:
 - Online tetapi ada outage terbuka → outage ditutup (`ended_at`, `duration_seconds`).
@@ -191,4 +189,4 @@ Menggunakan Recharts:
 ## Catatan Deployment
 
 - **Self-hosted** (laptop/server di jaringan lokal): semua fitur aktif penuh — scan perangkat, ping sweep, mDNS, dan monitoring otomatis.
-- **Vercel**: monitoring otomatis lewat Vercel Cron (`vercel.json`) tetap jalan, tapi **scan perangkat / ping sweep / mDNS tidak berguna** karena berjalan di datacenter Vercel, bukan di jaringan lokalmu. Untuk memantau perangkat rumah/kantor, jalankan di mesin yang ada di jaringan tersebut.
+- **Vercel**: dashboard, speed test, autentikasi, dan penyimpanan Turso berjalan normal. Tapi **fitur berbasis ping/scan (monitor outage, Wi-Fi Quality, scan perangkat) tidak berfungsi** karena runtime serverless Vercel memblokir ICMP dan tidak punya akses ke jaringan lokalmu — fitur tersebut harus dijalankan di mesin di jaringan lokal.
