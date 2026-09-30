@@ -25,7 +25,7 @@ export default function UserNav() {
   if (loading) return null;
   if (!user) {
     return (
-      <a className="nav-login" href="/login">
+      <a className="btn btn-login-nav" href="/login">
         Login
       </a>
     );
@@ -36,7 +36,7 @@ export default function UserNav() {
         // eslint-disable-next-line @next/next/no-img-element
         <img src={user.avatarUrl} alt="" width={24} height={24} className="avatar" />
       )}
-      <span>{user.name ?? user.login}</span>
+      <span className="name">{user.name ?? user.login}</span>
       <a className="nav-logout" href="/api/auth/logout">
         Logout
       </a>

@@ -47,66 +47,95 @@ export default function HomePage() {
 
   return (
     <div>
-      <h1>Dashboard</h1>
-      <div className="grid">
-        <div className="card">
-          <p className="muted">Status Koneksi</p>
+      <header className="page-head">
+        <h1>Dashboard</h1>
+        <p className="subtitle">
+          Pantau status koneksi, perangkat, dan kualitas jaringan secara real-time.
+        </p>
+      </header>
+
+      <section className="card hero">
+        <div>
+          <p className="muted" style={{ marginBottom: 6 }}>
+            Status Koneksi
+          </p>
           {status?.online == null ? (
-            <p className="metric">-</p>
+            <span className="badge offline">
+              <span className="dot" />
+              Memuat…
+            </span>
           ) : (
-            <>
-              <p>
-                <span className={`badge ${status.online ? "online" : "offline"}`}>
-                  {status.online ? "Online" : "Offline"}
-                </span>
-              </p>
-              <p className="muted">
-                Latency: {status.latencyMs != null ? `${status.latencyMs} ms` : "-"}
-              </p>
-              <p className="muted">
-                Packet loss: {status.packetLoss != null ? `${status.packetLoss}%` : "-"}
-              </p>
-              <p className="muted">Cek terakhir: {status.lastChecked ?? "-"}</p>
-            </>
+            <span className={`badge ${status.online ? "online" : "offline"}`}>
+              <span className="dot" />
+              {status.online ? "Online" : "Offline"}
+            </span>
           )}
         </div>
+        <div className="hero-metrics">
+          <div className="mini-stat">
+            <span className="mini-label">Latency</span>
+            <span className="mini-value">
+              {status?.latencyMs != null ? `${status.latencyMs} ms` : "-"}
+            </span>
+          </div>
+          <div className="mini-stat">
+            <span className="mini-label">Packet Loss</span>
+            <span className="mini-value">
+              {status?.packetLoss != null ? `${status.packetLoss}%` : "-"}
+            </span>
+          </div>
+          <div className="mini-stat">
+            <span className="mini-label">Cek Terakhir</span>
+            <span className="mini-value" style={{ fontSize: "0.82rem" }}>
+              {status?.lastChecked ?? "-"}
+            </span>
+          </div>
+        </div>
+      </section>
 
-        <div className="card">
-          <p className="muted">Internet Hari Ini</p>
-          <p>
-            Down <span className="metric">{history?.downCount ?? 0}</span> kali
-          </p>
-          <p>
-            Downtime:{" "}
-            <span className="metric">{history?.totalDowntime ?? "0 detik"}</span>
-          </p>
+      <section className="grid">
+        <div className="card stat-card">
+          <div className="card-head">
+            <span className="icon">🕒</span>
+            <h2>Internet Hari Ini</h2>
+          </div>
+          <p className="stat-label">Down</p>
+          <p className="metric">{history?.downCount ?? 0}×</p>
+          <p className="muted">Downtime {history?.totalDowntime ?? "0 detik"}</p>
         </div>
 
-        <div className="card">
-          <p className="muted">Perangkat</p>
-          <p>
-            <span className="metric">{status?.devicesOnline ?? 0}</span> online
-          </p>
+        <div className="card stat-card">
+          <div className="card-head">
+            <span className="icon">🖥️</span>
+            <h2>Perangkat</h2>
+          </div>
+          <p className="stat-label">Online</p>
+          <p className="metric">{status?.devicesOnline ?? 0}</p>
           <p className="muted">dari {status?.devicesTotal ?? 0} perangkat</p>
         </div>
 
-        <div className="card">
-          <p className="muted">Speed Test Terakhir</p>
+        <div className="card stat-card">
+          <div className="card-head">
+            <span className="icon">⚡</span>
+            <h2>Speed Test Terakhir</h2>
+          </div>
           {latest ? (
             <>
-              <p>
-                ↓ <span className="metric">{latest.download.toFixed(1)}</span> Mbps
-              </p>
+              <p className="stat-label">Download</p>
+              <p className="metric">{latest.download.toFixed(1)} Mbps</p>
               <p className="muted">
                 ↑ {latest.upload.toFixed(1)} Mbps · Ping {latest.ping ?? "-"} ms
               </p>
-              <p className="muted">{latest.created_at}</p>
             </>
           ) : (
-            <p className="muted">Belum ada hasil</p>
+            <>
+              <p className="stat-label">Belum ada hasil</p>
+              <p className="metric">-</p>
+              <p className="muted">Jalankan speed test untuk melihatnya.</p>
+            </>
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

@@ -38,47 +38,69 @@ export default function DevicesPage() {
 
   return (
     <div>
-      <h1>Device Monitor</h1>
+      <header className="page-head">
+        <h1>Device Monitor</h1>
+        <p className="subtitle">Deteksi dan pantau perangkat di jaringan lokal.</p>
+      </header>
+
       <div className="card">
-        <button onClick={scan} disabled={scanning}>
-          {scanning ? "Scanning..." : "Scan Perangkat"}
-        </button>
+        <div className="card-head">
+          <span className="icon">📡</span>
+          <h2>Pemindaian Jaringan</h2>
+          <div className="spacer" />
+          <button className="btn" onClick={scan} disabled={scanning}>
+            {scanning ? "Scanning…" : "Scan Perangkat"}
+          </button>
+        </div>
       </div>
+
       <div className="card">
-        <table>
-          <thead>
-            <tr>
-              <th>IP Address</th>
-              <th>Hostname</th>
-              <th>Vendor</th>
-              <th>MAC</th>
-              <th>Status</th>
-              <th>Last Seen</th>
-            </tr>
-          </thead>
-          <tbody>
-            {devices.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="muted">
-                  Belum ada perangkat. Klik &quot;Scan Perangkat&quot;.
-                </td>
-              </tr>
-            ) : (
-              devices.map((d) => (
-                <tr key={d.id}>
-                  <td>{d.ip}</td>
-                  <td>{d.hostname ?? "-"}</td>
-                  <td>{d.vendor ?? "-"}</td>
-                  <td>{d.mac ?? "-"}</td>
-                  <td>
-                    <span className={`badge ${d.status}`}>{d.status}</span>
-                  </td>
-                  <td>{d.last_seen ?? "-"}</td>
+        <div className="card-head">
+          <span className="icon">🖥️</span>
+          <h2>Perangkat di Jaringan</h2>
+          <div className="spacer" />
+          <span className="muted" style={{ fontSize: "0.85rem" }}>
+            {devices.length} perangkat
+          </span>
+        </div>
+        {devices.length === 0 ? (
+          <div className="empty">
+            <span className="empty-icon">📭</span>
+            <span>Belum ada perangkat. Klik “Scan Perangkat”.</span>
+          </div>
+        ) : (
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>IP Address</th>
+                  <th>Hostname</th>
+                  <th>Vendor</th>
+                  <th>MAC</th>
+                  <th>Status</th>
+                  <th>Last Seen</th>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              </thead>
+              <tbody>
+                {devices.map((d) => (
+                  <tr key={d.id}>
+                    <td className="mono">{d.ip}</td>
+                    <td>{d.hostname ?? "-"}</td>
+                    <td>{d.vendor ?? "-"}</td>
+                    <td className="mac">{d.mac ?? "-"}</td>
+                    <td>
+                      <span className={`badge ${d.status}`}>
+                        <span className="dot" />
+                        {d.status}
+                      </span>
+                    </td>
+                    <td className="muted">{d.last_seen ?? "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

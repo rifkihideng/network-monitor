@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   AUTH_COOKIE,
+  NEXT_COOKIE,
   STATE_COOKIE,
   SESSION_TTL_SECONDS,
   createSessionToken,
@@ -20,6 +21,7 @@ export async function GET(req: Request) {
   const fail = (reason: string) => {
     const res = NextResponse.redirect(new URL(`/login?error=${reason}`, url));
     res.cookies.set(STATE_COOKIE, "", { maxAge: 0, path: "/" });
+    res.cookies.set(NEXT_COOKIE, "", { maxAge: 0, path: "/" });
     return res;
   };
 
@@ -75,7 +77,14 @@ export async function GET(req: Request) {
       avatarUrl: user.avatar_url ?? null,
     });
 
-    const res = NextResponse.redirect(new URL("/", url));
+    const requested = cookies[NEXT_COOKIE];
+    const nextPath =
+      requested && requested.startsWith("/") && !requested.startsWith("//")
+        ? requested
+        : "/";
+
+    const res = NextResponse.redirect(new URL(nextPath, url));
+    res.cookies.set(NEXT_COOKIE, "", { maxAge: 0, path: "/" });
     res.cookies.set(STATE_COOKIE, "", { maxAge: 0, path: "/" });
     res.cookies.set(AUTH_COOKIE, token, {
       httpOnly: true,

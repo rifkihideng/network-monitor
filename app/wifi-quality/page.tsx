@@ -49,43 +49,57 @@ export default function WifiQualityPage() {
 
   return (
     <div>
-      <h1>Wi-Fi Quality</h1>
+      <header className="page-head">
+        <h1>Wi-Fi Quality</h1>
+        <p className="subtitle">Kualitas koneksi berdasarkan latency, jitter, dan packet loss.</p>
+      </header>
+
       <div className="card">
-        <button onClick={probe} disabled={probing}>
-          {probing ? "Probing..." : "Jalankan Probe"}
-        </button>
+        <div className="card-head">
+          <span className="icon">🧪</span>
+          <h2>Probe Jaringan</h2>
+          <div className="spacer" />
+          <button className="btn" onClick={probe} disabled={probing}>
+            {probing ? "Probing…" : "Jalankan Probe"}
+          </button>
+        </div>
       </div>
+
+      <section className="grid">
+        <div className="card stat-card">
+          <p className="stat-label">Latency</p>
+          <p className="metric">
+            {quality?.latencyMs != null ? `${quality.latencyMs} ms` : "-"}
+          </p>
+        </div>
+        <div className="card stat-card">
+          <p className="stat-label">Jitter</p>
+          <p className="metric">
+            {quality?.jitterMs != null ? `${quality.jitterMs} ms` : "-"}
+          </p>
+        </div>
+        <div className="card stat-card">
+          <p className="stat-label">Packet Loss</p>
+          <p className="metric">{quality ? `${quality.packetLoss}%` : "-"}</p>
+        </div>
+        <div className="card stat-card">
+          <p className="stat-label">Stability</p>
+          <p className="metric">
+            {quality?.stabilityScore != null ? `${quality.stabilityScore}/100` : "-"}
+          </p>
+        </div>
+      </section>
+
       <div className="card">
-        <h2>Ringkasan</h2>
-        <table>
-          <tbody>
-            <tr>
-              <th>Latency</th>
-              <td>{quality?.latencyMs != null ? `${quality.latencyMs} ms` : "-"}</td>
-            </tr>
-            <tr>
-              <th>Jitter</th>
-              <td>{quality?.jitterMs != null ? `${quality.jitterMs} ms` : "-"}</td>
-            </tr>
-            <tr>
-              <th>Packet Loss</th>
-              <td>{quality ? `${quality.packetLoss}%` : "-"}</td>
-            </tr>
-            <tr>
-              <th>Connection Stability</th>
-              <td>
-                {quality?.stabilityScore != null
-                  ? `${quality.stabilityScore}/100`
-                  : "-"}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div className="card">
-        <h2>Riwayat Latency</h2>
+        <div className="card-head">
+          <span className="icon">📈</span>
+          <h2>Riwayat Latency</h2>
+        </div>
         {samples.length === 0 ? (
-          <p className="muted">Belum ada data.</p>
+          <div className="empty">
+            <span className="empty-icon">📉</span>
+            <span>Belum ada data.</span>
+          </div>
         ) : (
           <LatencyChart data={samples} />
         )}

@@ -44,49 +44,68 @@ export default function HistoryPage() {
 
   return (
     <div>
-      <h1>Internet History</h1>
+      <header className="page-head">
+        <h1>Internet History</h1>
+        <p className="subtitle">Ringkasan outage dan total downtime jaringan.</p>
+      </header>
+
+      <section className="grid">
+        <div className="card stat-card">
+          <div className="card-head">
+            <span className="icon">🔻</span>
+            <h2>Down Hari Ini</h2>
+          </div>
+          <p className="metric">{summary?.downCount ?? 0}×</p>
+        </div>
+        <div className="card stat-card">
+          <div className="card-head">
+            <span className="icon">⏱️</span>
+            <h2>Total Downtime</h2>
+          </div>
+          <p className="metric">{summary?.totalDowntime ?? "0 detik"}</p>
+        </div>
+      </section>
+
       <div className="card">
-        <p className="muted">Ringkasan hari ini</p>
-        <p>
-          Internet down <span className="metric">{summary?.downCount ?? 0}</span> kali
-        </p>
-        <p>
-          Total downtime:{" "}
-          <span className="metric">{summary?.totalDowntime ?? "0 detik"}</span>
-        </p>
-      </div>
-      <div className="card">
-        <h2>Downtime 7 Hari Terakhir</h2>
+        <div className="card-head">
+          <span className="icon">📊</span>
+          <h2>Downtime 7 Hari Terakhir</h2>
+        </div>
         <DowntimeChart data={daily} />
       </div>
+
       <div className="card">
-        <h2>Daftar Outage</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Mulai</th>
-              <th>Selesai</th>
-              <th>Durasi (detik)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(summary?.outages ?? []).length === 0 ? (
-              <tr>
-                <td colSpan={3} className="muted">
-                  Tidak ada outage hari ini.
-                </td>
-              </tr>
-            ) : (
-              summary?.outages.map((o) => (
-                <tr key={o.id}>
-                  <td>{o.started_at ?? "-"}</td>
-                  <td>{o.ended_at ?? "-"}</td>
-                  <td>{o.duration_seconds ?? 0}</td>
+        <div className="card-head">
+          <span className="icon">📋</span>
+          <h2>Daftar Outage</h2>
+        </div>
+        {(summary?.outages ?? []).length === 0 ? (
+          <div className="empty">
+            <span className="empty-icon">✅</span>
+            <span>Tidak ada outage hari ini.</span>
+          </div>
+        ) : (
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mulai</th>
+                  <th>Selesai</th>
+                  <th>Durasi (detik)</th>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              </thead>
+              <tbody>
+                {summary?.outages.map((o) => (
+                  <tr key={o.id}>
+                    <td className="mono">{o.started_at ?? "-"}</td>
+                    <td className="mono">{o.ended_at ?? "-"}</td>
+                    <td>{o.duration_seconds ?? 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

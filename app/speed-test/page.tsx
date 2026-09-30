@@ -52,58 +52,84 @@ export default function SpeedTestPage() {
 
   return (
     <div>
-      <h1>Internet Speed Test</h1>
+      <header className="page-head">
+        <h1>Internet Speed Test</h1>
+        <p className="subtitle">Ukur kecepatan download, upload, dan latensi koneksi.</p>
+      </header>
+
       <div className="card">
+        <div className="card-head">
+          <span className="icon">⚡</span>
+          <h2>Jalankan Tes</h2>
+        </div>
         <div className="row">
-          <button onClick={run} disabled={running}>
-            {running ? "Testing..." : "Mulai Speed Test"}
-          </button>
           <select
+            className="select"
             value={provider}
             onChange={(e) =>
               setProvider(e.target.value as "cloudflare" | "ookla")
             }
             disabled={running}
           >
-            <option value="cloudflare">Cloudflare</option>
+            <option value="cloudflare">Cloudflare (browser)</option>
             <option value="ookla">Ookla (khusus lokal)</option>
           </select>
+          <button className="btn" onClick={run} disabled={running}>
+            {running ? "Testing…" : "Mulai Speed Test"}
+          </button>
         </div>
-        {error && <p className="muted">{error}</p>}
+        {error && <p className="error-text">{error}</p>}
       </div>
+
       {results.length > 0 && (
         <div className="card">
-          <h2>Grafik Kecepatan</h2>
+          <div className="card-head">
+            <span className="icon">📈</span>
+            <h2>Grafik Kecepatan</h2>
+          </div>
           <SpeedHistoryChart data={results} />
         </div>
       )}
+
       <div className="card">
-        <h2>Riwayat</h2>
+        <div className="card-head">
+          <span className="icon">📋</span>
+          <h2>Riwayat</h2>
+          <div className="spacer" />
+          <span className="muted" style={{ fontSize: "0.85rem" }}>
+            {results.length} hasil
+          </span>
+        </div>
         {results.length === 0 ? (
-          <p className="muted">Belum ada hasil.</p>
+          <div className="empty">
+            <span className="empty-icon">🚀</span>
+            <span>Belum ada hasil.</span>
+          </div>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Download (Mbps)</th>
-                <th>Upload (Mbps)</th>
-                <th>Ping (ms)</th>
-                <th>Jitter (ms)</th>
-                <th>Waktu</th>
-              </tr>
-            </thead>
-            <tbody>
-              {results.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.download.toFixed(2)}</td>
-                  <td>{r.upload.toFixed(2)}</td>
-                  <td>{r.ping ?? "-"}</td>
-                  <td>{r.jitter ?? "-"}</td>
-                  <td>{r.created_at}</td>
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Download (Mbps)</th>
+                  <th>Upload (Mbps)</th>
+                  <th>Ping (ms)</th>
+                  <th>Jitter (ms)</th>
+                  <th>Waktu</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {results.map((r) => (
+                  <tr key={r.id}>
+                    <td>{r.download.toFixed(2)}</td>
+                    <td>{r.upload.toFixed(2)}</td>
+                    <td>{r.ping ?? "-"}</td>
+                    <td>{r.jitter ?? "-"}</td>
+                    <td className="mono muted">{r.created_at}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

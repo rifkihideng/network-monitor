@@ -1,5 +1,6 @@
 export const AUTH_COOKIE = "auth_session";
 export const STATE_COOKIE = "auth_state";
+export const NEXT_COOKIE = "auth_next";
 export const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 hari
 
 export interface SessionUser {
