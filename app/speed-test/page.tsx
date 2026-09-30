@@ -66,7 +66,7 @@ export default function SpeedTestPage() {
             disabled={running}
           >
             <option value="cloudflare">Cloudflare</option>
-            <option value="ookla">Ookla (speedtest.net)</option>
+            <option value="ookla">Ookla (khusus lokal)</option>
           </select>
         </div>
         {error && <p className="muted">{error}</p>}
