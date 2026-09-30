@@ -14,6 +14,7 @@ interface SpeedTestRow {
 
 export default function SpeedTestPage() {
   const [results, setResults] = useState<SpeedTestRow[]>([]);
+  const [provider, setProvider] = useState<"cloudflare" | "ookla">("cloudflare");
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,8 +32,17 @@ export default function SpeedTestPage() {
     setRunning(true);
     setError(null);
     try {
-      await fetch("/api/speed-test", { method: "POST" });
-      await load();
+      const res = await fetch("/api/speed-test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? "Gagal menjalankan speed test.");
+      } else {
+        await load();
+      }
     } catch {
       setError("Gagal menjalankan speed test.");
     } finally {
@@ -44,9 +54,21 @@ export default function SpeedTestPage() {
     <div>
       <h1>Internet Speed Test</h1>
       <div className="card">
-        <button onClick={run} disabled={running}>
-          {running ? "Testing..." : "Mulai Speed Test"}
-        </button>
+        <div className="row">
+          <button onClick={run} disabled={running}>
+            {running ? "Testing..." : "Mulai Speed Test"}
+          </button>
+          <select
+            value={provider}
+            onChange={(e) =>
+              setProvider(e.target.value as "cloudflare" | "ookla")
+            }
+            disabled={running}
+          >
+            <option value="cloudflare">Cloudflare</option>
+            <option value="ookla">Ookla (speedtest.net)</option>
+          </select>
+        </div>
         {error && <p className="muted">{error}</p>}
       </div>
       {results.length > 0 && (

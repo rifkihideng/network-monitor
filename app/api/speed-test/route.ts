@@ -13,12 +13,22 @@ export async function GET() {
   return NextResponse.json({ results: rows });
 }
 
-export async function POST() {
+export async function POST(req: Request) {
   await initDb();
-  const result = await runSpeedTest();
-  await db.execute({
-    sql: "INSERT INTO speed_tests (download, upload, ping, jitter) VALUES (?, ?, ?, ?)",
-    args: [result.downloadMbps, result.uploadMbps, result.pingMs, result.jitterMs],
-  });
-  return NextResponse.json({ result });
+  const body = await req.json().catch(() => ({}));
+  const provider = body.provider === "ookla" ? "ookla" : "cloudflare";
+
+  try {
+    const result = await runSpeedTest(provider);
+    await db.execute({
+      sql: "INSERT INTO speed_tests (download, upload, ping, jitter) VALUES (?, ?, ?, ?)",
+      args: [result.downloadMbps, result.uploadMbps, result.pingMs, result.jitterMs],
+    });
+    return NextResponse.json({ result });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Speed test gagal" },
+      { status: 400 },
+    );
+  }
 }

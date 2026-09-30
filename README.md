@@ -4,7 +4,7 @@ Dashboard monitoring jaringan: **Internet Speed Test**, **Device Monitor**, **Wi
 
 ## Fitur
 
-- **Internet Speed Test** — download, upload, ping, jitter + grafik riwayat (Recharts).
+- **Internet Speed Test** — download, upload, ping, jitter + grafik riwayat (Recharts). Pilihan provider: Cloudflare (default, HTTP) atau Ookla/speedtest.net (butuh Ookla CLI: `winget install Ookla.Speedtest.CLI`).
 - **Device Monitor** — scan perangkat via ARP + ping sweep + mDNS/Bonjour, identifikasi vendor (OUI lookup), status online/offline, last seen.
 - **Wi-Fi Quality** — latency, jitter, packet loss, connection stability + grafik.
 - **Internet History** — deteksi outage otomatis, downtime hari ini & 7 hari terakhir.
