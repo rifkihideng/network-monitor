@@ -190,3 +190,20 @@ Menggunakan Recharts:
 
 - **Self-hosted** (laptop/server di jaringan lokal): semua fitur aktif penuh — scan perangkat, ping sweep, mDNS, dan monitoring otomatis.
 - **Vercel**: dashboard, speed test, autentikasi, dan penyimpanan Turso berjalan normal. Tapi **fitur berbasis ping/scan (monitor outage, Wi-Fi Quality, scan perangkat) tidak berfungsi** karena runtime serverless Vercel memblokir ICMP dan tidak punya akses ke jaringan lokalmu — fitur tersebut harus dijalankan di mesin di jaringan lokal.
+
+## Self-host & Auto-start (Windows)
+
+Untuk menjalankan permanen di mesin lokal (semua fitur aktif):
+
+1. Build produksi: `npm run build`.
+2. Jalankan `scripts\start-network-monitor.ps1` — atau double-click `scripts\start-network-monitor.vbs` untuk berjalan **tanpa jendela konsol**.
+3. **Auto-start saat login**: salin `scripts\start-network-monitor.vbs` ke folder Startup (`Win+R` → `shell:startup`).
+
+Server produksi berjalan di `http://localhost:3000`. Log: `logs\network-monitor.out.log` dan `.err.log`.
+
+> Auto-start saat **boot sebelum login** (bukan saat login) butuh Task Scheduler + hak admin:
+> ```powershell
+> $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "D:\project fix 5\scripts\start-network-monitor.ps1"'
+> $trigger = New-ScheduledTaskTrigger -AtStartup
+> Register-ScheduledTask -TaskName 'NetworkMonitor' -Action $action -Trigger $trigger -RunLevel Highest -Force
+> ```
