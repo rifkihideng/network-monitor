@@ -95,6 +95,12 @@ const DDL_STATEMENTS = [
     ended_at         TEXT,
     duration_seconds INTEGER
   )`,
+  `CREATE TABLE IF NOT EXISTS device_events (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    device_id  INTEGER NOT NULL,
+    status     TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
 ];
 
 export async function initDb(): Promise<void> {
@@ -104,6 +110,12 @@ export async function initDb(): Promise<void> {
   // Migrasi ringan untuk database yang sudah ada sebelum kolom vendor ditambahkan.
   try {
     await db.execute("ALTER TABLE devices ADD COLUMN vendor TEXT");
+  } catch {
+    // Kolom sudah ada.
+  }
+  // Migrasi ringan untuk database yang sudah ada sebelum kolom label ditambahkan.
+  try {
+    await db.execute("ALTER TABLE devices ADD COLUMN label TEXT");
   } catch {
     // Kolom sudah ada.
   }

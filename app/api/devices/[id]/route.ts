@@ -24,8 +24,8 @@ export async function PATCH(req: Request, { params }: Ctx) {
   const { id } = await params;
   const body = (await req.json()) ?? {};
   await db.execute({
-    sql: "UPDATE devices SET hostname = COALESCE(?, hostname), status = COALESCE(?, status) WHERE id = ?",
-    args: [body.hostname ?? null, body.status ?? null, Number(id)],
+    sql: "UPDATE devices SET hostname = COALESCE(?, hostname), label = COALESCE(?, label), status = COALESCE(?, status) WHERE id = ?",
+    args: [body.hostname ?? null, body.label ?? null, body.status ?? null, Number(id)],
   });
   return NextResponse.json({ ok: true });
 }

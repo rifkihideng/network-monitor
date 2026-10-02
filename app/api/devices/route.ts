@@ -3,6 +3,7 @@ import { db, initDb } from "@/lib/db/client";
 import { fullScan, resolveHostname } from "@/lib/network/scan";
 import { discoverMdnsDevices } from "@/lib/network/mdns";
 import { lookupVendor } from "@/lib/network/oui";
+import { snapshotDevices, applyOnlineStatuses } from "@/lib/devices";
 import type { ScannedDevice } from "@/lib/network/types";
 
 function mergeDevices(
@@ -34,6 +35,10 @@ export async function GET() {
 
 export async function POST() {
   await initDb();
+
+  // Snapshot status sebelum scan untuk mendeteksi transisi online/offline.
+  const before = await snapshotDevices();
+
   const [arpDevices, mdnsDevices] = await Promise.all([
     fullScan(),
     discoverMdnsDevices(4000),
@@ -87,17 +92,9 @@ export async function POST() {
     });
   }
 
-  // Perangkat yang tidak terlihat pada scan ini ditandai offline.
-  const discoveredIps = new Set(enriched.map((d) => d.ip));
-  const { rows: existingRows } = await db.execute("SELECT ip FROM devices");
-  for (const row of existingRows as unknown as Array<{ ip: string }>) {
-    if (!discoveredIps.has(row.ip)) {
-      await db.execute({
-        sql: "UPDATE devices SET status = 'offline' WHERE ip = ?",
-        args: [row.ip],
-      });
-    }
-  }
+  // Terapkan status online/offline + catat transisi ke device_events.
+  const onlineIps = new Set(enriched.map((d) => d.ip));
+  await applyOnlineStatuses(onlineIps, before);
 
   return NextResponse.json({ devices });
 }
