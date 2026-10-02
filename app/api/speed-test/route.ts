@@ -16,7 +16,7 @@ export async function GET() {
 export async function POST(req: Request) {
   await initDb();
   const body = await req.json().catch(() => ({}));
-  const provider = body.provider === "ookla" ? "ookla" : "cloudflare";
+  const provider = body.provider === "ookla" ? "ookla" : "fast";
 
   try {
     const result = await runSpeedTest(provider);

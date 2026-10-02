@@ -14,7 +14,7 @@ interface SpeedTestRow {
 
 export default function SpeedTestPage() {
   const [results, setResults] = useState<SpeedTestRow[]>([]);
-  const [provider, setProvider] = useState<"cloudflare" | "ookla">("cloudflare");
+  const [provider, setProvider] = useState<"fast" | "ookla">("fast");
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,11 +67,11 @@ export default function SpeedTestPage() {
             className="select"
             value={provider}
             onChange={(e) =>
-              setProvider(e.target.value as "cloudflare" | "ookla")
+              setProvider(e.target.value as "fast" | "ookla")
             }
             disabled={running}
           >
-            <option value="cloudflare">Cloudflare (browser)</option>
+            <option value="fast">Fast.com (Netflix)</option>
             <option value="ookla">Ookla (khusus lokal)</option>
           </select>
           <button className="btn" onClick={run} disabled={running}>

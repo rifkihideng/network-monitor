@@ -8,38 +8,95 @@ import type { SpeedTestResult } from "./types";
 
 const execFileAsync = promisify(execFile);
 
-export type SpeedTestProvider = "cloudflare" | "ookla";
+export type SpeedTestProvider = "fast" | "ookla";
 
-const DOWNLOAD_URL = "https://speed.cloudflare.com/__down?bytes=25000000";
-const UPLOAD_URL = "https://speed.cloudflare.com/__up";
-const PING_HOST = "1.1.1.1";
+const FAST_APP_URL = "https://fast.com";
+const FAST_API_URL = "https://api.fast.com/netflix/speedtest";
+const PING_HOST = "8.8.8.8";
+const DOWNLOAD_DURATION_MS = 6000;
+const UPLOAD_BYTES = 10_000_000;
 
-async function measureDownload(): Promise<number> {
-  const start = performance.now();
-  const res = await fetch(DOWNLOAD_URL, { cache: "no-store" });
-  if (!res.ok) throw new Error("Download test gagal");
-  const bytes = (await res.arrayBuffer()).byteLength;
-  const elapsedSec = (performance.now() - start) / 1000;
-  return (bytes * 8) / elapsedSec / 1_000_000; // Mbps
+async function getFastTargets(): Promise<string[]> {
+  const html = await (await fetch(FAST_APP_URL, { cache: "no-store" })).text();
+  const scriptMatch = html.match(/src="(\/app-[^"]+\.js)"/);
+  if (!scriptMatch) throw new Error("Gagal membaca halaman fast.com");
+
+  const jsUrl = "https://fast.com" + scriptMatch[1];
+  const js = await (await fetch(jsUrl, { cache: "no-store" })).text();
+  const token = js.match(/token:"([^"]+)"/)?.[1];
+  if (!token) throw new Error("Gagal mengambil token fast.com");
+  const urlCount = js.match(/urlCount:(\d+)/)?.[1] ?? "5";
+
+  const apiUrl = `${FAST_API_URL}?https=true&token=${encodeURIComponent(
+    token,
+  )}&urlCount=${urlCount}`;
+  const res = await fetch(apiUrl, { cache: "no-store" });
+  if (!res.ok) throw new Error("Gagal mengambil server fast.com");
+  const data = (await res.json()) as Array<{ url?: string }>;
+  const urls = data.map((t) => t.url).filter((u): u is string => Boolean(u));
+  if (urls.length === 0) throw new Error("Tidak ada server fast.com");
+  return urls;
 }
 
-async function measureUpload(): Promise<number> {
-  const payload = new Uint8Array(10_000_000); // 10 MB
-  const start = performance.now();
-  const res = await fetch(UPLOAD_URL, {
+async function measureFastDownload(urls: string[]): Promise<number> {
+  const controller = new AbortController();
+  const started = performance.now();
+  let totalBytes = 0;
+
+  const download = async (url: string) => {
+    try {
+      const res = await fetch(url, {
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      if (!res.ok || !res.body) return;
+      const reader = res.body.getReader();
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        totalBytes += value.byteLength;
+      }
+    } catch {
+      // dibatalkan saat durasi habis — wajar
+    }
+  };
+
+  await new Promise<void>((resolve) => {
+    const timer = setTimeout(() => {
+      controller.abort();
+      resolve();
+    }, DOWNLOAD_DURATION_MS);
+    Promise.allSettled(urls.map(download)).then(() => {
+      clearTimeout(timer);
+      resolve();
+    });
+  });
+
+  const elapsedSec = (performance.now() - started) / 1000;
+  const mbps = (totalBytes * 8) / elapsedSec / 1_000_000;
+  if (!Number.isFinite(mbps) || mbps <= 0) throw new Error("Download test gagal");
+  return mbps;
+}
+
+async function measureFastUpload(url: string): Promise<number> {
+  const payload = new Uint8Array(UPLOAD_BYTES);
+  const started = performance.now();
+  const res = await fetch(url, {
     method: "POST",
     body: payload,
     cache: "no-store",
   });
   if (!res.ok) throw new Error("Upload test gagal");
-  const elapsedSec = (performance.now() - start) / 1000;
-  return (payload.byteLength * 8) / elapsedSec / 1_000_000; // Mbps
+  const elapsedSec = (performance.now() - started) / 1000;
+  return (payload.byteLength * 8) / elapsedSec / 1_000_000;
 }
 
-async function runCloudflareTest(): Promise<SpeedTestResult> {
+async function runFastTest(): Promise<SpeedTestResult> {
+  const urls = await getFastTargets();
+
   const [downloadMbps, uploadMbps] = await Promise.all([
-    measureDownload(),
-    measureUpload(),
+    measureFastDownload(urls),
+    measureFastUpload(urls[0]),
   ]);
 
   const probes = await Promise.all(
@@ -123,7 +180,7 @@ async function runOoklaTest(): Promise<SpeedTestResult> {
 }
 
 export async function runSpeedTest(
-  provider: SpeedTestProvider = "cloudflare",
+  provider: SpeedTestProvider = "fast",
 ): Promise<SpeedTestResult> {
-  return provider === "ookla" ? runOoklaTest() : runCloudflareTest();
+  return provider === "ookla" ? runOoklaTest() : runFastTest();
 }
