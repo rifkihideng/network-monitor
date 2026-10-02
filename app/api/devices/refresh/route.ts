@@ -14,6 +14,14 @@ export const dynamic = "force-dynamic";
  */
 export async function POST() {
   await initDb();
+
+  // Di Vercel, ARP/ping membaca jaringan datacenter Vercel, bukan LAN rumah —
+  // skip agar tidak boros memori; cukup balikan data DB yang ditulis monitor lokal.
+  if (process.env.VERCEL) {
+    const { rows } = await db.execute("SELECT * FROM devices ORDER BY ip ASC");
+    return NextResponse.json({ devices: rows, source: "db" });
+  }
+
   const before = await snapshotDevices();
 
   // Perangkat yang terlihat di ARP table = baru saja aktif → online.

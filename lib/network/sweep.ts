@@ -170,7 +170,7 @@ export async function pingSweep(
   subnets: Subnet[],
   options?: { concurrency?: number; timeoutMs?: number },
 ): Promise<string[]> {
-  const concurrency = options?.concurrency ?? 128;
+  const concurrency = options?.concurrency ?? 64;
   const timeoutMs = options?.timeoutMs ?? 300;
 
   if (process.platform === "win32") {

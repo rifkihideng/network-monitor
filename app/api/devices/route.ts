@@ -36,6 +36,15 @@ export async function GET() {
 export async function POST() {
   await initDb();
 
+  // Di Vercel (serverless), scan ARP/ping-sweep/mDNS terjadi di datacenter
+  // Vercel — bukan LAN rumah — sehingga tidak berguna dan hanya menyedot
+  // memori (ping sweep 128 konkuren). Monitoring perangkat tetap dijalankan
+  // dari mesin lokal (Windows) yang menulis ke Turso.
+  if (process.env.VERCEL) {
+    const { rows } = await db.execute("SELECT * FROM devices ORDER BY ip ASC");
+    return NextResponse.json({ devices: rows, source: "db" });
+  }
+
   // Snapshot status sebelum scan untuk mendeteksi transisi online/offline.
   const before = await snapshotDevices();
 
