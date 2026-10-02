@@ -5,7 +5,7 @@ Dashboard monitoring jaringan: **Internet Speed Test**, **Device Monitor**, **Wi
 ## Fitur
 
 - **Internet Speed Test** — download, upload, ping, jitter + grafik riwayat (Recharts). Pilihan provider: Fast.com/Netflix (default) atau Ookla/speedtest.net (butuh Ookla CLI: `winget install Ookla.Speedtest.CLI`).
-- **Device Monitor** — scan perangkat via ARP + ping sweep + mDNS/Bonjour, identifikasi vendor (OUI lookup), status online/offline, last seen.
+- **Device Monitor** — scan perangkat via ARP + ping sweep + mDNS/Bonjour, identifikasi vendor (OUI lookup), status online/offline, last seen, rename label manual, dan riwayat online/offline per perangkat.
 - **Wi-Fi Quality** — latency, jitter, packet loss, connection stability + grafik.
 - **Internet History** — deteksi outage otomatis, downtime hari ini & 7 hari terakhir.
 - **Autentikasi GitHub** + monitoring otomatis (loop lokal / Vercel Cron).
@@ -44,7 +44,9 @@ project-fix-5/
 │   └── api/
 │       ├── speed-test/route.ts
 │       ├── devices/route.ts
+│       ├── devices/refresh/route.ts       # polling ringan status (ARP + ping)
 │       ├── devices/[id]/route.ts
+│       ├── devices/[id]/history/route.ts  # riwayat online/offline perangkat
 │       ├── wifi-quality/route.ts
 │       ├── wifi-quality/history/route.ts  # data grafik latency
 │       ├── history/route.ts
@@ -73,6 +75,7 @@ project-fix-5/
 │   │   ├── oui.ts                  # OUI lookup → nama vendor
 │   │   ├── ping.ts                 # Ping, ukur latency & packet loss
 │   │   └── types.ts
+│   ├── devices.ts                  # Snapshot status + apply online/offline
 │   ├── monitor.ts                  # Deteksi down/up + simpan sampel
 │   ├── monitor-loop.ts             # Scheduler lokal (self-hosted)
 │   └── utils.ts
@@ -116,8 +119,17 @@ CREATE TABLE devices (
   hostname   TEXT,
   mac        TEXT,
   vendor     TEXT,                     -- hasil OUI lookup
+  label      TEXT,                     -- nama manual (rename oleh user)
   status     TEXT DEFAULT 'offline',   -- online | offline
   last_seen  TEXT
+);
+
+-- device_events: riwayat transisi online/offline perangkat
+CREATE TABLE device_events (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  device_id   INTEGER NOT NULL,        -- FK -> devices.id
+  status      TEXT NOT NULL,           -- online | offline
+  created_at  TEXT DEFAULT (datetime('now'))
 );
 
 -- latency_samples: probe Wi-Fi quality
@@ -195,7 +207,14 @@ Menggunakan Recharts:
 ## Catatan Deployment
 
 - **Self-hosted** (laptop/server di jaringan lokal): semua fitur aktif penuh — scan perangkat, ping sweep, mDNS, dan monitoring otomatis.
-- **Vercel**: dashboard, speed test, autentikasi, dan penyimpanan Turso berjalan normal. Tapi **fitur berbasis ping/scan (monitor outage, Wi-Fi Quality, scan perangkat) tidak berfungsi** karena runtime serverless Vercel memblokir ICMP dan tidak punya akses ke jaringan lokalmu — fitur tersebut harus dijalankan di mesin di jaringan lokal.
+- **Vercel**: dashboard, speed test, autentikasi, dan penyimpanan Turso berjalan normal. **Fitur berbasis ping/scan (monitor outage, Wi-Fi Quality, scan perangkat) tidak bisa dijalankan dari Vercel** — runtime serverless memblokir ICMP dan tidak punya akses ke jaringan lokalmu, jadi fitur itu harus dijalankan di mesin di jaringan lokal. Endpoint `POST /api/devices` dan `POST /api/devices/refresh` otomatis melewati ping sweep/mDNS saat berjalan di Vercel (hanya membaca data dari Turso) demi menghemat memori serverless.
+
+## Riwayat Perubahan (Changelog)
+
+- **2026-10-02 — Hemat memori Vercel**: `POST /api/devices` dan `POST /api/devices/refresh` kini mendeteksi `process.env.VERCEL` dan langsung membaca data dari Turso tanpa menjalankan ping sweep/mDNS (sebelumnya memicu ~128 proses `ping` bersamaan di serverless). Concurrency sweep default diturunkan `128 → 64`.
+- **2026-10-02 — Scan perangkat lebih akurat**: perangkat yang terlihat pada scan (ARP/mDNS) ditandai `online` — tidak lagi mengandalkan ICMP ping (banyak HP memblokir ICMP). Adapter virtual (VMware/VirtualBox/WSL/dst.) disaring di `lib/network/scan.ts`.
+- **2026-10-02 — Riwayat perangkat**: kolom `devices.label` (rename manual), tabel `device_events` (riwayat online/offline), helper `lib/devices.ts` (`snapshotDevices` + `applyOnlineStatuses`), endpoint `POST /api/devices/refresh` (polling ringan 30 dtk) dan `GET /api/devices/[id]/history`.
+- **2026-10-02 — Retry koneksi DB**: `lib/db/client.ts` menambahkan retry otomatis untuk error koneksi Turso (`ConnectTimeout`/`fetch failed`).
 
 ## Self-host & Auto-start (Windows)
 
