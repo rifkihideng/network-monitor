@@ -15,6 +15,7 @@ interface Device {
 export default function DevicesPage() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [scanning, setScanning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/devices");
@@ -28,9 +29,20 @@ export default function DevicesPage() {
 
   async function scan() {
     setScanning(true);
+    setError(null);
     try {
-      await fetch("/api/devices", { method: "POST" });
+      const res = await fetch("/api/devices", { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setError(
+          (data as { error?: string } | null)?.error ??
+            `Scan gagal (HTTP ${res.status})`,
+        );
+        return;
+      }
       await load();
+    } catch {
+      setError("Scan gagal — periksa koneksi atau coba lagi.");
     } finally {
       setScanning(false);
     }
@@ -52,6 +64,7 @@ export default function DevicesPage() {
             {scanning ? "Scanning…" : "Scan Perangkat"}
           </button>
         </div>
+        {error && <p className="error-text">{error}</p>}
       </div>
 
       <div className="card">

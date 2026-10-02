@@ -35,6 +35,36 @@ function parsePing(output: string, host: string): PingResult {
   return { host, online: packetLoss < 100, latencyMs, packetLoss };
 }
 
+/**
+ * Probe konektivitas via HTTPS (GET /cdn-cgi/trace pada host Cloudflare).
+ * Dipakai sebagai fallback saat ICMP ping diblokir (mis. Vercel serverless
+ * tidak mengizinkan ICMP, tapi akses HTTPS tetap boleh).
+ */
+async function httpProbe(host: string, timeoutMs: number): Promise<PingResult> {
+  const url = `https://${host}/cdn-cgi/trace`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const started = Date.now();
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      redirect: "follow",
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    if (res.ok) {
+      const latencyMs = Math.max(1, Math.round(Date.now() - started));
+      void res.body?.cancel();
+      return { host, online: true, latencyMs, packetLoss: 0 };
+    }
+    return { host, online: false, latencyMs: null, packetLoss: 100 };
+  } catch {
+    return { host, online: false, latencyMs: null, packetLoss: 100 };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function ping(
   host: string,
   count = 4,
@@ -45,15 +75,25 @@ export async function ping(
     ? ["-n", String(count), "-w", String(timeoutMs), host]
     : ["-c", String(count), "-W", String(Math.max(1, Math.ceil(timeoutMs / 1000))), host];
 
+  let result: PingResult;
   try {
     const { stdout } = await execFileAsync("ping", args, {
       timeout: timeoutMs + 500,
     });
-    return parsePing(stdout, host);
+    result = parsePing(stdout, host);
   } catch (err) {
     // Ping exit non-zero saat ada packet loss / host unreachable, stdout tetap bisa dipakai.
     const out = (err as { stdout?: string })?.stdout ?? "";
-    if (out) return parsePing(out, host);
-    return { host, online: false, latencyMs: null, packetLoss: 100 };
+    result = out
+      ? parsePing(out, host)
+      : { host, online: false, latencyMs: null, packetLoss: 100 };
   }
+
+  // ICMP bisa diblokir (Vercel, jaringan tertentu) sehingga hasilnya "100% loss"
+  // padahal internet sebenarnya tersedia. Coba konfirmasi lewat HTTP.
+  if (!result.online) {
+    const http = await httpProbe(host, timeoutMs);
+    if (http.online) return http;
+  }
+  return result;
 }
